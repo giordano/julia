@@ -341,3 +341,73 @@ function collect{I<:IteratorND}(g::Generator{I})
     dest[1] = first
     return map_to!(g.f, 2, st, dest, g.iter)
 end
+
+"""
+`@shareindexes` may improve the efficiency of loops that have multiple indexes.
+For example,
+```
+@shareindexes for (IA, IB) in zip(eachindex(A), eachindex(B))
+    # body
+end
+```
+generates, by default, a loop with two indexes that need to be
+incremented and tested on each iteration. However, if it happens that
+the two iterators in the `zip` call have the same value, then it runs
+a variant of the loop that uses a single index.
+"""
+macro shareindexes(ex)
+    _shareindexes(ex)
+end
+
+function _shareindexes(ex::Expr)
+    if ex.head == :block
+        # Skip to the :for loop
+        i = 1
+        while i <= length(ex.args) && (a = ex.args[i]; !isa(a, Expr) || a.head != :for)
+            i += 1
+        end
+        i > length(ex.args) && error("expression must be a for loop")
+        ex.args[i] = _shareindexes(ex.args[i])
+        return ex
+    end
+    ex.head == :for || error("expression must be a for loop")
+    iteration, body = ex.args
+    indexvars, iterex = iteration.args
+    isa(indexvars, Symbol) && return ex  # just one variable
+    # A couple of sanity checks
+    indexvars.head == :tuple || error("iteration variables must be expressed as a tuple")
+    iterex.head == :call && iterex.args[1] == :zip || error("iterators must be zipped")
+    iteratorexs = iterex.args[2:end]
+    n = length(indexvars.args)
+    length(iteratorexs) == n || error("number of indexes does not match the number of iterators")
+    n != 2 && return ex    # just special-case 2 indexes for now
+    indexsyms = indexvars.args
+    # Evaluate the iterators
+    itersyms = [gensym(string("R", i)) for i = 1:n]
+    iterevals = [Expr(:(=), itersyms[i], iteratorexs[i]) for i = 1:n]
+    # Prepare a variant using a single index
+    index1 = gensym(:I)
+    body1 = itersub(body, indexsyms, index1)
+    esc(quote
+        $(iterevals...)
+        if $(itersyms[1]) == $(itersyms[2])
+            for $index1 in $(itersyms[1])
+                $body1
+            end
+        else
+            for $indexvars = zip($(itersyms...))
+                $body
+            end
+        end
+    end)
+end
+
+itersub(ex, indexsyms, replacement) = itersub!(copy(ex), indexsyms, replacement)
+function itersub!(ex::Expr, indexsyms, replacement)
+    for i = 1:length(ex.args)
+        ex.args[i] = itersub!(ex.args[i], indexsyms, replacement)
+    end
+    ex
+end
+itersub!(sym::Symbol, indexsyms, replacement) = sym in indexsyms ? replacement : sym
+itersub!(arg, indexsyms, replacement) = arg

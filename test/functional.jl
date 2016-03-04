@@ -204,3 +204,37 @@ let f(g) = (@test size(g.iter)==(2,3))
 end
 
 @test_throws DimensionMismatch Base.IteratorND(1:2, (2,3))
+
+# @shareindexes
+let
+    function mydot1(A, B)
+        s = 0.0
+        for I in eachindex(A, B)
+            @inbounds s += A[I]*B[I]
+        end
+        s
+    end
+
+    function mydot2(A, B)
+        s = 0.0
+        for (IA,IB) in zip(eachindex(A), eachindex(B))
+            @inbounds s += A[IA]*B[IB]
+        end
+        s
+    end
+
+    function mydotshared(A, B)
+        s = 0.0
+        @shareindexes for (IA,IB) in zip(eachindex(A), eachindex(B))
+            @inbounds s += A[IA]*B[IB]
+        end
+        s
+    end
+
+    A = rand(3,4)
+    B = rand(3,4)
+    AS = sub(A, 1:size(A,1), :)   # LinearSlow
+    BS = sub(B, 1:size(B,1), :)
+
+    @test mydot1(A, B) == mydot2(AS, BS) == mydotshared(A, BS)
+end

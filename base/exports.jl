@@ -1430,6 +1430,7 @@ export
     @inbounds,
     @fastmath,
     @simd,
+    @shareindexes,
     @inline,
     @noinline,
 
