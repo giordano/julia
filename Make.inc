@@ -659,7 +659,7 @@ ifeq ($(OS),Darwin)
 LIBUNWIND:=$(build_libdir)/libosxunwind.a
 JCPPFLAGS+=-DLIBOSXUNWIND
 else
-LIBUNWIND:=$(build_libdir)/libunwind-generic.a $(build_libdir)/libunwind.a
+LIBUNWIND:=$(build_libdir)/libunwind.a
 endif
 endif
 endif
@@ -815,7 +815,7 @@ else ifneq ($(USEMSVC), 1)
 endif
 
 ifeq ($(OS), Linux)
-OSLIBS += -Wl,--no-as-needed -ldl -lrt -lpthread -Wl,--export-dynamic,--as-needed,--no-whole-archive $(LIBUNWIND)
+OSLIBS += -Wl,--no-as-needed -ldl -lrt -lpthread -Wl,--export-dynamic,--as-needed,--whole-archive $(LIBUNWIND) $(NO_WHOLE_ARCHIVE)
 ifneq ($(SANITIZE),1)
 ifneq ($(SANITIZE_MEMORY),1)
 ifneq ($(LLVM_SANITIZE),1)

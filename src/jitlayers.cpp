@@ -352,6 +352,44 @@ public:
                                           std::move(Resolver));
     }
 
+    void addObjectFile(object::OwningBinary<object::ObjectFile> O) {
+        // TODO: When we require C++14, move this into a helper function
+        auto Resolver = orc::createLambdaResolver(
+                          [&](const std::string &Name) {
+                            // TODO: consider moving the FunctionMover resolver here
+                            // Step 0: ObjectLinkingLayer has checked whether it is in the current module
+                            // Step 1: See if it's something known to the ExecutionEngine
+                            if (auto Sym = findSymbol(Name, true))
+                              return RuntimeDyld::SymbolInfo(Sym.getAddress(),
+                                                             Sym.getFlags());
+                            // Step 2: Search the program symbols
+                            if (uint64_t addr = SectionMemoryManager::getSymbolAddressInProcess(Name))
+                                return RuntimeDyld::SymbolInfo(addr, JITSymbolFlags::Exported);
+                            // Return failure code
+                            return RuntimeDyld::SymbolInfo(nullptr);
+                          },
+                          [](const std::string &S) { return nullptr; }
+                        );
+#ifdef LLVM38
+       std::vector<std::unique_ptr<object::OwningBinary<object::ObjectFile>>> Objs;
+       Objs.push_back(
+               llvm::make_unique<object::OwningBinary<object::ObjectFile>>(
+                        std::move(O)));
+        ObjectLayer.addObjectSet(std::move(Objs), MemMgr, std::move(Resolver));
+#else
+        std::unique_ptr<object::ObjectFile> Obj;
+        std::unique_ptr<MemoryBuffer> Buf;
+        std::tie(Obj, Buf) = O.takeBinary();
+        std::vector<std::unique_ptr<object::ObjectFile>> Objs;
+        Objs.push_back(std::move(Obj));
+        auto H =
+          ObjectLayer.addObjectSet(std::move(Objs), MemMgr, std::move(Resolver));
+
+        std::vector<std::unique_ptr<MemoryBuffer>> Bufs;
+        Bufs.push_back(std::move(Buf));
+        ObjectLayer.takeOwnershipOfBuffers(H, std::move(Bufs));
+#endif
+    }
     void removeModule(ModuleHandleT H) { CompileLayer->removeModuleSet(H); }
 
     orc::JITSymbol findSymbol(const std::string &Name, bool ExportedSymbolsOnly)

@@ -28,6 +28,9 @@
     save_arg_area_loc;
     u8_*;
     uv_*;
+    unw_*;
+    _Ux86_64_*;
+    _ULx86_64_*;
     add_library_mapping;
     utf8proc_*;
     jlbacktrace;
