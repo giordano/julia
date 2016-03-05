@@ -384,10 +384,10 @@ public:
         Objs.push_back(std::move(Obj));
         auto H =
           ObjectLayer.addObjectSet(std::move(Objs), MemMgr, std::move(Resolver));
-
         std::vector<std::unique_ptr<MemoryBuffer>> Bufs;
         Bufs.push_back(std::move(Buf));
         ObjectLayer.takeOwnershipOfBuffers(H, std::move(Bufs));
+        ObjectLayer.emitAndFinalize(H);
 #endif
     }
     void removeModule(ModuleHandleT H) { CompileLayer->removeModuleSet(H); }
