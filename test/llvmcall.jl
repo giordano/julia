@@ -173,6 +173,8 @@ module ObjLoadTest
         ret void
         """),Void,Tuple{})
     end
-    @unix_only do_the_call()
-    @test didcall
+    @unix_only begin
+	do_the_call()
+    	@test didcall
+    end
 end
