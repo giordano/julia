@@ -1300,8 +1300,8 @@ void jl_extern_c(jl_function_t *f, jl_value_t *rt, jl_value_t *argt, char *name)
     Function *llvmf = jl_cfunction_object(f, rt, (jl_tupletype_t*)argt);
     if (llvmf) {
         Function *active_llvmf = active_module->getFunction(llvmf->getName());
-        // In imaging mode, and in most cases in JIT mode (where the wrapper is specifically)
-        // compiled for this function, we can simply use a global alias.
+        // In imaging mode, and in most cases in JIT mode (where the wrapper is specifically
+        // compiled for this function), we can simply use a global alias.
         if (active_llvmf) {
             #ifndef LLVM35
             new GlobalAlias(llvmf->getType(), GlobalValue::ExternalLinkage, name, llvmf, llvmf->getParent());

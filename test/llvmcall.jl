@@ -147,3 +147,29 @@ function confuse_declname_parsing()
     Void, Tuple{})
 end
 confuse_declname_parsing()
+
+
+module ObjLoadTest
+    using Base.Test
+    using Base.llvmcall
+    here = dirname(@__FILE__)
+    didcall = false
+    function callback()
+        global didcall
+        didcall = true
+        nothing
+    end
+    Base.ccallable(callback,Void,Tuple{},:jl_the_callback)
+    Base.ccallable(callback,Void,Tuple{},:_jl_the_callback)
+    ccall(:jl_load_object_file,Void,(Ptr{UInt8},),joinpath(here,"objloadtest/objloadtest.o"))
+    function do_the_call()
+        llvmcall(
+        (""" declare void @call_the_callback_back()""",
+        """
+        call void @call_the_callback_back()
+        ret void
+        """),Void,Tuple{})
+    end
+    do_the_call()
+    @test didcall
+end
