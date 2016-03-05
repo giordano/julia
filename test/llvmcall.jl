@@ -161,7 +161,10 @@ module ObjLoadTest
     end
     Base.ccallable(callback,Void,Tuple{},:jl_the_callback)
     Base.ccallable(callback,Void,Tuple{},:_jl_the_callback)
-    ccall(:jl_load_object_file,Void,(Ptr{UInt8},),joinpath(here,"objloadtest/objloadtest.o"))
+    # For now, only test this on Unix. On Windows we expect
+    # special structure in the object file to allow us to unwind,
+    # which this object file does not have.
+    @unix_only ccall(:jl_load_object_file,Void,(Ptr{UInt8},),joinpath(here,"objloadtest/objloadtest.o"))
     function do_the_call()
         llvmcall(
         (""" declare void @call_the_callback_back()""",
@@ -170,6 +173,6 @@ module ObjLoadTest
         ret void
         """),Void,Tuple{})
     end
-    do_the_call()
+    @unix_only do_the_call()
     @test didcall
 end

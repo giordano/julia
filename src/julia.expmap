@@ -30,7 +30,6 @@
     uv_*;
     unw_*;
     _U*;
-    _UL*;
     add_library_mapping;
     utf8proc_*;
     jlbacktrace;
