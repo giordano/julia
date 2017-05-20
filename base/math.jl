@@ -737,7 +737,7 @@ function ieee754_rem_pio2(x::Float64)
     # this is just wrapping up
     # https://github.com/JuliaLang/openspecfun/blob/master/rem_pio2/e_rem_pio2.c
 
-    y = [0.0,0.0]
+    y = Vector{Float64}(2)
     n = ccall((:__ieee754_rem_pio2, openspecfun), Cint, (Float64,Ptr{Float64}), x, y)
     return (n,y)
 end
