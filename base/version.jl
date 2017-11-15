@@ -280,7 +280,7 @@ function banner(io::IO = STDOUT)
            _       _ _(_)_     |  A fresh approach to technical computing
           (_)     | (_) (_)    |  Documentation: https://docs.julialang.org
            _ _   _| |_  __ _   |  Type \"?help\" for help.
-          | | | | | | |/ _` |  |
+          | | | | | | |/ _ˋ |  |
           | | |_| | | | (_| |  |  Version $(VERSION)$(commit_date)
          _/ |\\__'_|_|_|\\__'_|  |  $(commit_string)
         |__/                   |  $(Sys.MACHINE)
