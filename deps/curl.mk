@@ -22,15 +22,15 @@ ifeq ($(OS),Linux)
 CURL_LDFLAGS += -lpthread
 endif
 
-$(SRCCACHE)/curl-$(CURL_VER).tar.bz2: | $(SRCCACHE)
-	$(JLDOWNLOAD) $@ https://curl.se/download/curl-$(CURL_VER).tar.bz2
+$(SRCCACHE)/$(CURL_VER).tar.gz: | $(SRCCACHE)
+	$(JLDOWNLOAD) $@ https://github.com/curl/curl/archive/$(CURL_VER).tar.gz
 
-$(SRCCACHE)/curl-$(CURL_VER)/source-extracted: $(SRCCACHE)/curl-$(CURL_VER).tar.bz2
+$(SRCCACHE)/curl-$(CURL_VER)/source-extracted: $(SRCCACHE)/$(CURL_VER).tar.gz
 	$(JLCHECKSUM) $<
-	cd $(dir $<) && $(TAR) jxf $(notdir $<)
+	cd $(dir $<) && $(TAR) zxf $(notdir $<)
 	echo 1 > $@
 
-checksum-curl: $(SRCCACHE)/curl-$(CURL_VER).tar.bz2
+checksum-curl: $(SRCCACHE)/$(CURL_VER).tar.gz
 	$(JLCHECKSUM) $<
 
 ## xref: https://github.com/JuliaPackaging/Yggdrasil/blob/master/L/LibCURL/common.jl
@@ -39,7 +39,7 @@ CURL_CONFIGURE_FLAGS := $(CONFIGURE_COMMON) \
 	--without-gnutls --without-libidn2 --without-librtmp \
 	--without-libpsl --without-libgsasl --without-fish-functions-dir \
 	--disable-ares --disable-manual --disable-ldap --disable-ldaps --disable-static \
-	--without-gssapi --without-brotli
+	--without-gssapi --without-brotli --enable-debug
 # A few things we actually enable
 CURL_CONFIGURE_FLAGS += --enable-versioned-symbols \
 	--with-libssh2=${build_prefix} --with-zlib=${build_prefix} --with-nghttp2=${build_prefix}
@@ -58,14 +58,15 @@ endif
 CURL_CONFIGURE_FLAGS += $(CURL_TLS_CONFIGURE_FLAGS)
 
 $(SRCCACHE)/curl-$(CURL_VER)/curl-8.6.0-build.patch-applied: $(SRCCACHE)/curl-$(CURL_VER)/source-extracted
-	cd $(dir $@) && \
-		patch -p1 -f < $(SRCDIR)/patches/curl-8.6.0-build.patch
+	# cd $(dir $@) && \
+	# 	patch -p1 -f < $(SRCDIR)/patches/curl-8.6.0-build.patch
 	echo 1 > $@
 
 $(SRCCACHE)/curl-$(CURL_VER)/source-patched: $(SRCCACHE)/curl-$(CURL_VER)/curl-8.6.0-build.patch-applied
 	echo 1 > $@
 
 $(BUILDDIR)/curl-$(CURL_VER)/build-configured: $(SRCCACHE)/curl-$(CURL_VER)/source-patched
+	cd $(dir $<) && autoreconf -fiv \
 	mkdir -p $(dir $@)
 	cd $(dir $@) && \
 	$(dir $<)/configure $(CURL_CONFIGURE_FLAGS) \
@@ -92,9 +93,9 @@ clean-curl:
 	-$(MAKE) -C $(BUILDDIR)/curl-$(CURL_VER) clean
 
 distclean-curl:
-	rm -rf $(SRCCACHE)/curl-$(CURL_VER).tar.bz2 $(SRCCACHE)/curl-$(CURL_VER) $(BUILDDIR)/curl-$(CURL_VER)
+	rm -rf $(SRCCACHE)/$(CURL_VER).tar.gz $(SRCCACHE)/curl-$(CURL_VER) $(BUILDDIR)/curl-$(CURL_VER)
 
-get-curl: $(SRCCACHE)/curl-$(CURL_VER).tar.bz2
+get-curl: $(SRCCACHE)/$(CURL_VER).tar.gz
 extract-curl: $(SRCCACHE)/curl-$(CURL_VER)/source-extracted
 configure-curl: $(BUILDDIR)/curl-$(CURL_VER)/build-configured
 compile-curl: $(BUILDDIR)/curl-$(CURL_VER)/build-compiled
