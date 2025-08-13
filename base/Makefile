@@ -23,11 +23,12 @@ define parse_features
 @printf "\n" >> $@
 endef
 
-$(BUILDDIR)/features_h.jl: $(SRCDIR)/../src/features_x86.h $(SRCDIR)/../src/features_aarch32.h $(SRCDIR)/../src/features_aarch64.h
+$(BUILDDIR)/features_h.jl: $(SRCDIR)/../src/features_x86.h $(SRCDIR)/../src/features_aarch32.h $(SRCDIR)/../src/features_aarch64.h $(SRCDIR)/../src/features_riscv64.h
 	@-rm -f $@
 	@$(call parse_features,x86,X86)
 	@$(call parse_features,aarch32,AArch32)
 	@$(call parse_features,aarch64,AArch64)
+	@$(call parse_features,riscv64,RISCV64)
 
 $(BUILDDIR)/pcre_h.jl: $(PCRE_INCL_PATH)
 	@$(call PRINT_PERL, $(CPP) -D PCRE2_CODE_UNIT_WIDTH=8 -dM $< | perl -nle '/^\s*#define\s+PCRE2_(\w*)\s*\(?($(PCRE_CONST))\)?u?\s*$$/ and print index($$1, "ERROR_") == 0 ? "const $$1 = Cint($$2)" : "const $$1 = UInt32($$2)"' | LC_ALL=C sort > $@)
